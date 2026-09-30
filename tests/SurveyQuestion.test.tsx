@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SurveyQuestion } from "@/components/survey/SurveyQuestion";
 import { getQuestionById } from "@/config/surveyQuestions";
+import type { SurveyQuestion as SurveyQuestionConfig } from "@/types/survey";
 
 describe("SurveyQuestion", () => {
   it("renders single-choice options and calls onChange with the selected value", async () => {
@@ -27,12 +28,12 @@ describe("SurveyQuestion", () => {
   it("enforces maxSelections on a multi-select question", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    const question = getQuestionById("q3_purchase_reasons")!; // maxSelections: 3
+    const question = getQuestionById("top_priorities")!; // maxSelections: 3
 
     const { rerender } = render(
       <SurveyQuestion
         question={question}
-        value={["price", "freshness", "trust"]}
+        value={["price", "quality", "trust"]}
         otherValue=""
         onChange={onChange}
         onOtherChange={vi.fn()}
@@ -40,21 +41,21 @@ describe("SurveyQuestion", () => {
     );
 
     // A 4th option should be silently ignored once 3 are already selected.
-    await user.click(screen.getByText("Variety"));
+    await user.click(screen.getByText("Easy to reach"));
     expect(onChange).not.toHaveBeenCalled();
 
     // Unchecking one of the selected options should work normally.
     rerender(
       <SurveyQuestion
         question={question}
-        value={["price", "freshness", "trust"]}
+        value={["price", "quality", "trust"]}
         otherValue=""
         onChange={onChange}
         onOtherChange={vi.fn()}
       />
     );
-    await user.click(screen.getByText("Price"));
-    expect(onChange).toHaveBeenCalledWith(["freshness", "trust"]);
+    await user.click(screen.getByText("Low price"));
+    expect(onChange).toHaveBeenCalledWith(["quality", "trust"]);
   });
 
   it("shows a free-text field when 'Other' is selected for an allowOther question", () => {
@@ -71,29 +72,39 @@ describe("SurveyQuestion", () => {
     expect(screen.getByPlaceholderText("Tell us more...")).toBeInTheDocument();
   });
 
-  it("applies exclusive-option behavior for Q9's 'No' option", async () => {
+  it("applies exclusive-option behavior for a question's 'None' option", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    const question = getQuestionById("q9_gift_purchase_history")!;
+    const question: SurveyQuestionConfig = {
+      id: "test_exclusive",
+      title: "Test exclusive option",
+      type: "multiple",
+      exclusiveOptionValue: "none",
+      options: [
+        { value: "a", label: "Option A" },
+        { value: "b", label: "Option B" },
+        { value: "none", label: "None" },
+      ],
+    };
 
     render(
       <SurveyQuestion
         question={question}
-        value={["wedding_engagement"]}
+        value={["a"]}
         otherValue=""
         onChange={onChange}
         onOtherChange={vi.fn()}
       />
     );
 
-    await user.click(screen.getByText("No"));
-    expect(onChange).toHaveBeenCalledWith(["no"]);
+    await user.click(screen.getByText("None"));
+    expect(onChange).toHaveBeenCalledWith(["none"]);
   });
 
   it("renders a textarea for open-ended questions and reports the typed value", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    const question = getQuestionById("q12_owner_suggestion")!;
+    const question = getQuestionById("improvement_feedback")!;
 
     render(
       <SurveyQuestion
@@ -105,7 +116,7 @@ describe("SurveyQuestion", () => {
       />
     );
 
-    const textarea = screen.getByPlaceholderText("Your idea...");
+    const textarea = screen.getByPlaceholderText("Tell us here...");
     await user.type(textarea, "Hi");
     expect(onChange).toHaveBeenCalled();
   });

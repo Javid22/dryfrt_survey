@@ -1,4 +1,4 @@
-import { Users, Store, Globe, Gift } from "lucide-react";
+import { Users, CheckCircle2, Store, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getAllAnswers, getAllSubmissions } from "@/lib/db/submissions";
 import { computeDashboardStats, purchaseChannelBreakdown } from "@/lib/analytics/aggregate";
@@ -21,11 +21,19 @@ export default async function AdminDashboardPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold text-stone-900">Dashboard</h1>
-        <p className="text-stone-500">Live snapshot of the customer research survey.</p>
+        <p className="text-stone-500">
+          Live snapshot of the customer research survey — includes in-progress drafts.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <DashboardCard label="Total Responses" value={stats.totalResponses} icon={Users} accent="amber" />
+        <DashboardCard
+          label="Completed"
+          value={stats.completedResponses}
+          icon={CheckCircle2}
+          accent="emerald"
+        />
         <DashboardCard
           label="Offline Buyers"
           value={`${stats.offlineBuyerPct}%`}
@@ -38,7 +46,6 @@ export default async function AdminDashboardPage() {
           icon={Globe}
           accent="emerald"
         />
-        <DashboardCard label="Gift Buyers" value={`${stats.giftBuyerPct}%`} icon={Gift} accent="rose" />
       </div>
 
       <Card>

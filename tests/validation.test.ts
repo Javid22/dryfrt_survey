@@ -4,18 +4,10 @@ import { validateSurveyPayload } from "@/lib/validation/survey";
 function baseAnswers() {
   return {
     q1_purchase_channel: "local_shop",
-    q2_store_name: "NJ Happie Foods",
-    q2_store_area: "Avadi",
-    q3_purchase_reasons: ["price", "freshness"],
-    q4_likes_most: "Great quality",
-    q5_dislikes: ["price_high"],
-    q6_change_one_thing: "Lower prices",
-    q7_ideal_features: ["better_prices", "freshness_guarantee"],
-    q8_interested_services: ["regular_shopping"],
-    q9_gift_purchase_history: ["wedding_engagement"],
-    q10_customisation_preferences: ["quantity"],
-    q11_switch_reasons: ["better_price"],
-    q12_owner_suggestion: "I would offer better packaging.",
+    top_priorities: ["price", "quality"],
+    monthly_budget: "1000_2000",
+    purchase_frequency: "once_a_month",
+    improvement_feedback: "Lower prices please",
   };
 }
 
@@ -24,7 +16,6 @@ describe("validateSurveyPayload", () => {
     const result = validateSurveyPayload({
       answers: baseAnswers(),
       startedAt: new Date().toISOString(),
-      area: "Avadi",
       website: "",
     });
     expect(result.success).toBe(true);
@@ -44,37 +35,23 @@ describe("validateSurveyPayload", () => {
     }
   });
 
-  it("rejects Q3 with more than 3 selections", () => {
+  it("rejects top priorities with more than 3 selections", () => {
     const answers = baseAnswers();
-    answers.q3_purchase_reasons = ["price", "freshness", "trust", "variety"];
+    answers.top_priorities = ["price", "quality", "trust", "service"];
     const result = validateSurveyPayload({ answers, startedAt: new Date().toISOString() });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.issues.some((i) => i.questionId === "q3_purchase_reasons")).toBe(true);
+      expect(result.issues.some((i) => i.questionId === "top_priorities")).toBe(true);
     }
-  });
-
-  it("rejects Q7 with more than 5 selections", () => {
-    const answers = baseAnswers();
-    answers.q7_ideal_features = [
-      "better_prices",
-      "freshness_guarantee",
-      "more_varieties",
-      "transparent_pricing",
-      "premium_packaging",
-      "home_delivery",
-    ];
-    const result = validateSurveyPayload({ answers, startedAt: new Date().toISOString() });
-    expect(result.success).toBe(false);
   });
 
   it("rejects a textarea answer that is too long", () => {
     const answers = baseAnswers();
-    answers.q12_owner_suggestion = "a".repeat(1001);
+    answers.improvement_feedback = "a".repeat(1001);
     const result = validateSurveyPayload({ answers, startedAt: new Date().toISOString() });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.issues.some((i) => i.questionId === "q12_owner_suggestion")).toBe(true);
+      expect(result.issues.some((i) => i.questionId === "improvement_feedback")).toBe(true);
     }
   });
 
@@ -85,18 +62,6 @@ describe("validateSurveyPayload", () => {
       website: "http://spam.example.com",
     });
     expect(result.success).toBe(false);
-  });
-
-  it("does not require conditional Q2 fields when Q1 is 'online'", () => {
-    const answers = baseAnswers();
-    // @ts-expect-error removing offline-only fields for this test case
-    delete answers.q2_store_name;
-    // @ts-expect-error removing offline-only fields for this test case
-    delete answers.q2_store_area;
-    answers.q1_purchase_channel = "online";
-    (answers as Record<string, unknown>).q2_online_platform = "Amazon";
-    const result = validateSurveyPayload({ answers, startedAt: new Date().toISOString() });
-    expect(result.success).toBe(true);
   });
 
   it("rejects a malformed top-level payload", () => {

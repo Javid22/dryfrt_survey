@@ -64,9 +64,72 @@ export const surveySubmissionSchema = z.object({
   ageGroup: z.string().max(SHORT_TEXT_MAX).optional(),
   purchaseFrequency: z.string().max(SHORT_TEXT_MAX).optional(),
   website: honeypotSchema, // honeypot: must be empty
+  /** Answer keys the client already knows have a survey_answers row, from an earlier "save progress" call. */
+  previouslySavedAnswerKeys: z.array(z.string()).optional(),
 });
 
 export type SurveySubmissionInput = z.infer<typeof surveySubmissionSchema>;
+
+/**
+ * Same shape as the final submission, plus the id of the in-progress
+ * submission being resumed (absent on the very first save). Used for the
+ * step-by-step "save as you go" writes, so it's a superset of the final
+ * schema rather than a stricter one.
+ */
+export const surveyProgressSchema = surveySubmissionSchema.extend({
+  submissionId: z.string().uuid().optional(),
+  stepQuestionIds: z.array(z.string()).optional(),
+});
+
+export type SurveyProgressInput = z.infer<typeof surveyProgressSchema>;
+
+export type ProgressValidationResult =
+  | { success: true; data: SurveyProgressInput }
+  | { success: false; issues: ValidationIssue[] };
+
+/**
+ * Validates a partial, in-progress payload: shape + honeypot only. Unlike
+ * `validateSurveyPayload`, this deliberately skips the "is every required
+ * question answered" pass — the customer may only have answered the
+ * question group they just clicked Next on, and later steps are still
+ * blank. Per-question schemas (max length / max selections) still apply to
+ * whatever answers were actually provided.
+ */
+export function validateSurveyProgressPayload(payload: unknown): ProgressValidationResult {
+  const parsed = surveyProgressSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      issues: parsed.error.issues.map((i) => ({
+        questionId: String(i.path[0] ?? "form"),
+        message: i.message,
+      })),
+    };
+  }
+
+  if (parsed.data.website && parsed.data.website.length > 0) {
+    return { success: false, issues: [{ questionId: "website", message: "Invalid submission." }] };
+  }
+
+  const issues: ValidationIssue[] = [];
+  for (const [questionId, value] of Object.entries(parsed.data.answers)) {
+    const schema = questionSchemas[questionId];
+    if (!schema) continue; // unknown question id -> ignore rather than reject the whole save
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      issues.push({
+        questionId,
+        message: result.error.issues[0]?.message ?? "Invalid answer.",
+      });
+    }
+  }
+
+  if (issues.length > 0) {
+    return { success: false, issues };
+  }
+
+  return { success: true, data: parsed.data };
+}
 
 export type ValidationIssue = { questionId: string; message: string };
 

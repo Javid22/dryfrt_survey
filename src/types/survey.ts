@@ -33,6 +33,13 @@ export type SurveyQuestion = {
   allowOther?: boolean;
   /** Which section this question belongs to, for grouping/analytics. */
   section?: "core" | "demographic";
+  /**
+   * For text/textarea questions: tap-to-fill phrases shown above the input
+   * so an open question doesn't start from a blank page. Tapping one drops
+   * that phrase into the field (still editable); it doesn't restrict what
+   * the customer can actually type.
+   */
+  suggestions?: string[];
 };
 
 /** Answer value for a single question, keyed by question id. */
@@ -56,6 +63,8 @@ export type SurveyAnswerRow = {
 
 /** Payload sent from the client to the submit server action / route. */
 export type SurveySubmissionPayload = {
+  /** Id of the in-progress submission being finalized, if one was created by an earlier "save progress" call. */
+  submissionId?: string;
   answers: SurveyAnswers;
   startedAt: string;
   area?: string;
@@ -63,7 +72,28 @@ export type SurveySubmissionPayload = {
   purchaseFrequency?: string;
   /** Honeypot field — must stay empty. */
   website?: string;
+  /**
+   * Keys the client already knows have a survey_answers row, from an
+   * earlier "save progress" call — bare question_id for single/text
+   * answers, "questionId::optionValue" for one selected option of a
+   * multi-select question. See src/lib/survey/answerRows.ts.
+   */
+  previouslySavedAnswerKeys?: string[];
+  /**
+   * question_ids to actually write this call (progress saves only — omit
+   * for a final submit, which processes everything). Scopes the write to
+   * just the current screen instead of reprocessing every question
+   * answered so far, which is what made intermediate saves get slower the
+   * further into the survey the customer got.
+   */
+  stepQuestionIds?: string[];
 };
+
+/**
+ * Payload sent on every "Next" click (not just the final submit) so answers
+ * are saved one question group at a time as the customer progresses.
+ */
+export type SurveyProgressPayload = SurveySubmissionPayload;
 
 /** A row from survey_submissions joined with denormalized fields. */
 export type SurveySubmission = {

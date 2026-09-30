@@ -5,7 +5,7 @@ import { getQuestionById } from "@/config/surveyQuestions";
 
 export const dynamic = "force-dynamic";
 
-const VOICE_QUESTION_IDS = ["q4_likes_most", "q6_change_one_thing", "q12_owner_suggestion"];
+const VOICE_QUESTION_IDS = ["improvement_feedback"];
 
 export default async function CustomerVoicePage() {
   const supabase = await createClient();

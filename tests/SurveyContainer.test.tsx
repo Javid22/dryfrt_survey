@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 const pushMock = vi.fn();
 const submitSurveyMock = vi.fn();
+const saveSurveyProgressMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: vi.fn() }),
@@ -11,6 +12,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/app/survey/actions", () => ({
   submitSurvey: (...args: unknown[]) => submitSurveyMock(...args),
+  saveSurveyProgress: (...args: unknown[]) => saveSurveyProgressMock(...args),
 }));
 
 // Import after mocks are registered.
@@ -21,6 +23,8 @@ describe("SurveyContainer", () => {
     localStorage.clear();
     pushMock.mockClear();
     submitSurveyMock.mockReset();
+    saveSurveyProgressMock.mockReset();
+    saveSurveyProgressMock.mockResolvedValue({ success: true, id: "draft_123", savedAnswerKeys: [] });
   });
 
   afterEach(() => {
@@ -45,33 +49,20 @@ describe("SurveyContainer", () => {
     render(<SurveyContainer />);
 
     await screen.findByText("Where do you usually buy dry fruits?");
-    await user.click(screen.getByText("Online website/app"));
+    await user.click(screen.getByText("Online (website or app)"));
     await user.click(screen.getByRole("button", { name: /next/i }));
 
-    expect(await screen.findByText("Which website/app do you usually buy from?")).toBeInTheDocument();
+    expect(
+      await screen.findByText("What matters most to you when choosing where to buy?")
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /back/i }));
     expect(await screen.findByText("Where do you usually buy dry fruits?")).toBeInTheDocument();
     // Previous answer preserved.
-    expect(screen.getByText("Online website/app").closest("label")).toHaveClass("border-amber-600");
+    expect(screen.getByText("Online (website or app)").closest("label")).toHaveClass("border-amber-600");
   });
 
-  it("shows offline fields (store name + area) instead of the online field for an offline channel", async () => {
-    const user = userEvent.setup();
-    render(<SurveyContainer />);
-
-    await screen.findByText("Where do you usually buy dry fruits?");
-    await user.click(screen.getByText("Local dry-fruit shop"));
-    await user.click(screen.getByRole("button", { name: /next/i }));
-
-    expect(
-      await screen.findByText("If you buy offline, which shop/store do you usually buy from?")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Which area is the store located in?")).toBeInTheDocument();
-    expect(screen.queryByText("Which website/app do you usually buy from?")).not.toBeInTheDocument();
-  });
-
-  it("enforces the max-selections limit on Q3 before allowing Next to pass validation elsewhere", async () => {
+  it("enforces the max-selections limit on the priorities question before allowing Next to pass validation elsewhere", async () => {
     // maxSelections is enforced at the option level (SurveyQuestion), already
     // covered in SurveyQuestion.test.tsx; here we confirm the container lets
     // a within-limit multi-select answer through without an error.
@@ -79,12 +70,11 @@ describe("SurveyContainer", () => {
     render(<SurveyContainer />);
 
     await screen.findByText("Where do you usually buy dry fruits?");
-    await user.click(screen.getByText("I don't usually buy dry fruits"));
+    await user.click(screen.getByText("I don't buy dry fruits"));
     await user.click(screen.getByRole("button", { name: /next/i }));
 
-    // Q2 group has no applicable fields for "dont_buy" -> skips straight to Q3.
     expect(
-      await screen.findByText("What are the main reasons you choose this shop/website?")
+      await screen.findByText("What matters most to you when choosing where to buy?")
     ).toBeInTheDocument();
   });
 
@@ -94,7 +84,7 @@ describe("SurveyContainer", () => {
     render(<SurveyContainer />);
 
     await screen.findByText("Where do you usually buy dry fruits?");
-    await user.click(screen.getByText("I don't usually buy dry fruits"));
+    await user.click(screen.getByText("I don't buy dry fruits"));
 
     // Click Next repeatedly until we reach the final "Submit Survey" button.
     for (let i = 0; i < 20; i++) {
@@ -120,7 +110,7 @@ describe("SurveyContainer", () => {
     render(<SurveyContainer />);
 
     await screen.findByText("Where do you usually buy dry fruits?");
-    await user.click(screen.getByText("I don't usually buy dry fruits"));
+    await user.click(screen.getByText("I don't buy dry fruits"));
 
     for (let i = 0; i < 20; i++) {
       const submitButton = screen.queryByRole("button", { name: /submit survey/i });

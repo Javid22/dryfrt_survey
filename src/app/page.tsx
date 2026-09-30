@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { ArrowRight, Clock3, Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ArrowRight, Clock3 } from "lucide-react";
+import Link from "next/link";
 
 export default function LandingPage() {
   return (
@@ -23,12 +23,6 @@ export default function LandingPage() {
         <div className="flex flex-wrap items-center justify-center gap-3 text-sm font-medium text-amber-800">
           <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-4 py-2">
             <Clock3 className="h-4 w-4" /> 3–4 minutes
-          </span>
-          <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-4 py-2">
-            <Sparkles className="h-4 w-4" /> No right or wrong answers
-          </span>
-          <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-4 py-2">
-            <Heart className="h-4 w-4" /> Your honest experience matters
           </span>
         </div>
 

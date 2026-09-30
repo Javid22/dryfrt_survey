@@ -20,9 +20,8 @@ export function ResponseTable({ submissions }: { submissions: SurveySubmission[]
       <TableHeader>
         <TableRow>
           <TableHead>Date</TableHead>
-          <TableHead>Area</TableHead>
+          <TableHead>Status</TableHead>
           <TableHead>Purchase Channel</TableHead>
-          <TableHead>Store / Platform</TableHead>
           <TableHead className="text-right">View</TableHead>
         </TableRow>
       </TableHeader>
@@ -32,11 +31,14 @@ export function ResponseTable({ submissions }: { submissions: SurveySubmission[]
             <TableCell className="whitespace-nowrap text-stone-500">
               {new Date(s.created_at).toLocaleDateString()}
             </TableCell>
-            <TableCell>{s.area ? <Badge variant="outline">{s.area}</Badge> : "—"}</TableCell>
-            <TableCell>{channelLabel(s.purchase_channel)}</TableCell>
-            <TableCell className="max-w-[220px] truncate">
-              {s.store_name || s.online_platform || "—"}
+            <TableCell>
+              {s.completed_at ? (
+                <Badge variant="success">Completed</Badge>
+              ) : (
+                <Badge variant="secondary">In progress</Badge>
+              )}
             </TableCell>
+            <TableCell>{channelLabel(s.purchase_channel)}</TableCell>
             <TableCell className="text-right">
               <Link href={`/admin/responses/${s.id}`} className="font-medium text-amber-700 hover:underline">
                 View

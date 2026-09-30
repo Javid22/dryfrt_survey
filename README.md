@@ -1,13 +1,16 @@
 # Dry Fruit Customer Research Survey
 
-A mobile-first customer research web app for understanding how people buy dry
-fruits, dry-fruit gift boxes, wedding/festival/corporate gifts, and
-customised hampers. This is a **research tool**, not a storefront — no
-e-commerce or ordering functionality is included.
+A mobile-first customer research web app for understanding everyday dry-fruit
+buying behavior — where people buy, what matters most to them (quality,
+price, customer experience, ambience, etc.), budget, and demand for
+quick (10-minute) home delivery. This is a **research tool**, not a
+storefront — no e-commerce or ordering functionality is included.
+(Gift-box/occasion-gifting questions are on hold for now — see
+`src/config/surveyQuestions.ts` if that focus comes back.)
 
 ## Overview
 
-- Public survey (`/survey`) collects 12 core questions plus optional
+- Public survey (`/survey`) collects 15 core questions plus optional
   demographics, one question (or small related group) per screen, with a
   progress bar, back/forward navigation, and localStorage-backed drafts so a
   refresh never loses answers.
@@ -121,7 +124,7 @@ npm run test:watch
 ```
 
 The suite (`tests/`) covers:
-- **Survey:** question navigation, back button, required-field validation, max-selection enforcement, conditional Q2 fields, Q9's exclusive "No" option, mocked submission (success + failure), error handling (`tests/SurveyContainer.test.tsx`, `tests/SurveyQuestion.test.tsx`)
+- **Survey:** question navigation, back button, required-field validation, max-selection enforcement, conditional Q2 fields, the generic "exclusive option" behavior, mocked submission (success + failure), error handling (`tests/SurveyContainer.test.tsx`, `tests/SurveyQuestion.test.tsx`)
 - **Validation:** Zod schema valid/invalid cases derived from the question config (`tests/validation.test.ts`)
 - **Analytics:** dashboard stat computation, channel/problem aggregation, area filtering (`tests/aggregate.test.ts`)
 - **CSV export:** row shaping + escaping (`tests/csv.test.ts`)
@@ -129,12 +132,12 @@ The suite (`tests/`) covers:
 
 ## Design Decisions & Notes
 
-- **Conditional questions & "exclusive option" behavior** are both handled generically on the `SurveyQuestion` config type (`conditional`, `exclusiveOptionValue`) rather than hardcoded per-question, so Q2's offline/online split and Q9's "No" behavior share the same mechanism future questions can reuse.
+- **Conditional questions & "exclusive option" behavior** are both handled generically on the `SurveyQuestion` config type (`conditional`, `exclusiveOptionValue`) rather than hardcoded per-question, so Q2's offline/online split and any future "none of the above"-style option share the same mechanism.
 - **Q2** is modelled as three separate config entries (`q2_store_name`, `q2_store_area`, `q2_online_platform`), grouped into one screen via `STEP_GROUPS` in `src/config/surveyQuestions.ts`, so offline respondents see both store fields together and online respondents see just the platform field.
 - **"Other" free-text answers** are stored as a synthetic `"<question_id>__other"` entry in `survey_answers`, keeping the main question's schema simple.
-- **Denormalized columns** (`purchase_channel`, `store_name`, `store_area`, `online_platform`) on `survey_submissions` are populated at insert time from the same request as a fast-query mirror; `survey_answers` remains the source of truth for every Q1–Q12 answer.
+- **Denormalized columns** (`purchase_channel`, `store_name`, `store_area`, `online_platform`) on `survey_submissions` are populated at insert time from the same request as a fast-query mirror; `survey_answers` remains the source of truth for every question's answer.
 - **Competitor name normalization** (`src/lib/analytics/normalizeStoreName.ts`) is a small, conservative JSON map for common variants (e.g. "Amazon.in" → "Amazon"). It intentionally does not attempt aggressive fuzzy matching — extend the map by hand as new spelling variants show up in real data.
-- **Duplicate/spam prevention:** a hidden honeypot field, a 10-minute client-side resubmission cooldown (`localStorage` timestamp), and server-side Zod re-validation on every submission (never trust the client).
+- **Duplicate/spam prevention:** a hidden honeypot field and server-side Zod re-validation on every submission (never trust the client). There is deliberately no resubmission cooldown — the same customer is allowed to fill out the survey again any time.
 - **No service role key needed** for normal operation — see the RLS section above.
 
 ## Deployment (Vercel + Supabase + GitHub)

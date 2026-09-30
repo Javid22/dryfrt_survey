@@ -1,6 +1,5 @@
 import type { SurveyAnswerDbRow, SurveySubmission } from "@/types/survey";
 import { getQuestionById } from "@/config/surveyQuestions";
-import { normalizeStoreName } from "./normalizeStoreName";
 
 export type CountItem = { label: string; value: string; count: number };
 
@@ -55,98 +54,83 @@ export function purchaseChannelBreakdown(submissions: SurveySubmission[]): Count
     .sort((a, b) => b.count - a.count);
 }
 
-export function topPurchaseReasons(
+/** "What matters most" breakdown (up to 3 picks per respondent). */
+export function topPriorities(
   answers: SurveyAnswerDbRow[],
   submissionIds: Set<string> | null = null
 ): CountItem[] {
-  return countOccurrences(answers, "q3_purchase_reasons", submissionIds);
+  return countOccurrences(answers, "top_priorities", submissionIds);
 }
 
-export function topProblems(
+export function monthlyBudgetBreakdown(
   answers: SurveyAnswerDbRow[],
   submissionIds: Set<string> | null = null
 ): CountItem[] {
-  return countOccurrences(answers, "q5_dislikes", submissionIds);
+  return countOccurrences(answers, "monthly_budget", submissionIds);
 }
 
-export function desiredFeatures(
+export function purchaseFrequencyBreakdown(
   answers: SurveyAnswerDbRow[],
   submissionIds: Set<string> | null = null
 ): CountItem[] {
-  return countOccurrences(answers, "q7_ideal_features", submissionIds);
-}
-
-export function giftingDemand(
-  answers: SurveyAnswerDbRow[],
-  submissionIds: Set<string> | null = null
-): CountItem[] {
-  return countOccurrences(answers, "q8_interested_services", submissionIds);
-}
-
-export function customisationDemand(
-  answers: SurveyAnswerDbRow[],
-  submissionIds: Set<string> | null = null
-): CountItem[] {
-  return countOccurrences(answers, "q10_customisation_preferences", submissionIds);
+  return countOccurrences(answers, "purchase_frequency", submissionIds);
 }
 
 export type DashboardStats = {
+  /** Every row in survey_submissions, completed or still in progress. */
   totalResponses: number;
+  /** The subset of totalResponses that reached the final "Submit". */
+  completedResponses: number;
   offlineBuyerPct: number;
   onlineBuyerPct: number;
-  giftBuyerPct: number;
 };
 
-const OFFLINE_CHANNELS = new Set(["local_shop", "supermarket", "wholesale_market", "whatsapp_instagram"]);
+const OFFLINE_CHANNELS = new Set(["local_shop", "supermarket", "wholesale_market"]);
 
-/** Top dashboard cards (spec section 14) — computed dynamically, never hardcoded. */
+/**
+ * Top dashboard cards — computed dynamically, never hardcoded. Takes the
+ * unfiltered submission list (drafts included) so "Total Responses" reflects
+ * everything sitting in the table; channel percentages are still over
+ * whoever has answered Q1 so far, complete or not.
+ */
 export function computeDashboardStats(
   submissions: SurveySubmission[],
   answers: SurveyAnswerDbRow[]
 ): DashboardStats {
+  void answers; // no longer needed for these stats, kept in the signature so callers don't need to change
   const total = submissions.length;
+  const completed = filterCompleted(submissions).length;
   if (total === 0) {
-    return { totalResponses: 0, offlineBuyerPct: 0, onlineBuyerPct: 0, giftBuyerPct: 0 };
+    return { totalResponses: 0, completedResponses: 0, offlineBuyerPct: 0, onlineBuyerPct: 0 };
   }
 
+  const withChannel = submissions.filter((s) => s.purchase_channel).length;
   const offlineCount = submissions.filter(
     (s) => s.purchase_channel && OFFLINE_CHANNELS.has(s.purchase_channel)
   ).length;
   const onlineCount = submissions.filter((s) => s.purchase_channel === "online").length;
 
-  const submissionIds = new Set(submissions.map((s) => s.id));
-  const giftAnswers = answersForQuestion(answers, "q9_gift_purchase_history", submissionIds);
-  const giftBuyerCount = giftAnswers.filter(
-    (values) => values.length > 0 && !(values.length === 1 && values[0] === "no")
-  ).length;
-
   return {
     totalResponses: total,
-    offlineBuyerPct: Math.round((offlineCount / total) * 100),
-    onlineBuyerPct: Math.round((onlineCount / total) * 100),
-    giftBuyerPct: Math.round((giftBuyerCount / total) * 100),
+    completedResponses: completed,
+    offlineBuyerPct: withChannel === 0 ? 0 : Math.round((offlineCount / withChannel) * 100),
+    onlineBuyerPct: withChannel === 0 ? 0 : Math.round((onlineCount / withChannel) * 100),
   };
-}
-
-export type CompetitorRankItem = { name: string; count: number };
-
-/** "Where customers currently buy" ranked list, from Q2 store/online names. */
-export function competitorRanking(submissions: SurveySubmission[]): CompetitorRankItem[] {
-  const counts = new Map<string, number>();
-  for (const s of submissions) {
-    const raw = s.store_name || s.online_platform;
-    if (!raw) continue;
-    const normalized = normalizeStoreName(raw);
-    if (!normalized) continue;
-    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
 }
 
 /** Filters submissions down to a single area ("All Areas" = no filter). */
 export function filterByArea(submissions: SurveySubmission[], area: string): SurveySubmission[] {
   if (!area || area === "All Areas") return submissions;
   return submissions.filter((s) => (s.area ?? "").toLowerCase() === area.toLowerCase());
+}
+
+/**
+ * Keeps only submissions that reached the final "Submit" — for charts that
+ * would otherwise be skewed by abandoned in-progress drafts. getAllSubmissions
+ * / getAllAnswers return everything (drafts included) so pages that want to
+ * show every row (Dashboard, Responses) can; call this first wherever a
+ * chart should represent finished surveys only.
+ */
+export function filterCompleted(submissions: SurveySubmission[]): SurveySubmission[] {
+  return submissions.filter((s) => s.completed_at !== null);
 }

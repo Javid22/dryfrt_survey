@@ -51,7 +51,14 @@ export default async function ResponseDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Submission {submission.id.slice(0, 8)}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>Submission {submission.id.slice(0, 8)}</CardTitle>
+            {submission.completed_at ? (
+              <Badge variant="success">Completed</Badge>
+            ) : (
+              <Badge variant="secondary">In progress</Badge>
+            )}
+          </div>
           <p className="text-sm text-stone-500">
             {new Date(submission.created_at).toLocaleString()} · Survey {submission.survey_version}
           </p>

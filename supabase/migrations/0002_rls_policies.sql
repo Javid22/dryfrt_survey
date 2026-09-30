@@ -39,6 +39,7 @@ create policy "authenticated can select survey_answers"
     to authenticated
     using (auth.role() = 'authenticated');
 
--- No UPDATE or DELETE policies for anon or authenticated: responses are
--- immutable once submitted (nobody, including the app, can edit/delete a
--- customer's answers through the API).
+-- Anon UPDATE policies (needed so in-progress submissions can be saved one
+-- step at a time) are added in 0003_incremental_progress.sql. No DELETE
+-- policy for anon or authenticated: nobody, including the app, can delete a
+-- customer's answers through the API.

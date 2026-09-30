@@ -30,6 +30,17 @@ export function SurveyQuestion({
     ((question.type === "single" && value === "other") ||
       (question.type === "multiple" && Array.isArray(value) && value.includes("other")));
 
+  /** Drops a tapped suggestion into the current text, rather than replacing it, so tapping more than one still makes sense. */
+  function applySuggestion(phrase: string) {
+    const current = typeof value === "string" ? value.trim() : "";
+    if (!current) {
+      onChange(phrase);
+      return;
+    }
+    if (current.toLowerCase().includes(phrase.toLowerCase())) return; // already there
+    onChange(`${current}, ${phrase}`);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -130,6 +141,23 @@ export function SurveyQuestion({
           />
         </div>
       )}
+
+      {(question.type === "text" || question.type === "textarea") &&
+        question.suggestions &&
+        question.suggestions.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {question.suggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => applySuggestion(suggestion)}
+                className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-600 transition-colors hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
 
       {question.type === "text" && (
         <Input

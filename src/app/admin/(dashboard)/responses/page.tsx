@@ -23,7 +23,9 @@ export default async function AdminResponsesPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900">Responses</h1>
-          <p className="text-stone-500">{submissions.length} total.</p>
+          <p className="text-stone-500">
+            {submissions.length} total (completed and in-progress).
+          </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <AreaFilter />

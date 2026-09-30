@@ -6,33 +6,33 @@ function makeDetail(overrides: Partial<SubmissionDetail["submission"]> = {}): Su
   return {
     submission: {
       id: "11111111-1111-1111-1111-111111111111",
-      survey_version: "v1",
+      survey_version: "v2",
       source: "web",
       started_at: "2026-01-01T00:00:00.000Z",
       completed_at: "2026-01-01T00:03:00.000Z",
-      area: "Avadi",
-      age_group: "25_34",
+      area: null,
+      age_group: null,
       purchase_frequency: "once_a_month",
       purchase_channel: "local_shop",
-      store_name: "NJ Happie Foods",
-      store_area: "Avadi",
+      store_name: null,
+      store_area: null,
       online_platform: null,
       created_at: "2026-01-01T00:03:00.000Z",
       ...overrides,
     },
     answers: {
-      q3_purchase_reasons: {
+      top_priorities: {
         id: "a1",
         submission_id: "11111111-1111-1111-1111-111111111111",
-        question_id: "q3_purchase_reasons",
+        question_id: "top_priorities",
         answer_text: null,
-        answer_json: ["price", "freshness"],
+        answer_json: ["price", "quality"],
         created_at: "2026-01-01T00:03:00.000Z",
       },
-      q4_likes_most: {
+      improvement_feedback: {
         id: "a2",
         submission_id: "11111111-1111-1111-1111-111111111111",
-        question_id: "q4_likes_most",
+        question_id: "improvement_feedback",
         answer_text: "Great, fresh products",
         answer_json: null,
         created_at: "2026-01-01T00:03:00.000Z",
@@ -46,19 +46,17 @@ describe("submissionToCsvRow", () => {
     const row = submissionToCsvRow(makeDetail());
     expect(row).toHaveLength(CSV_COLUMNS.length);
     expect(row[0]).toBe("11111111-1111-1111-1111-111111111111");
-    expect(row[2]).toBe("Avadi");
-    expect(row[3]).toBe("local_shop");
-    expect(row[4]).toBe("NJ Happie Foods");
-    expect(row[7]).toBe("price; freshness");
-    expect(row[8]).toBe("Great, fresh products");
+    expect(row[2]).toBe("local_shop");
+    expect(row[3]).toBe("price; quality");
+    expect(row[6]).toBe("Great, fresh products");
   });
 
   it("fills missing answers with empty strings rather than throwing", () => {
     const detail = makeDetail();
     detail.answers = {};
     const row = submissionToCsvRow(detail);
-    expect(row[8]).toBe("");
-    expect(row[7]).toBe("");
+    expect(row[3]).toBe("");
+    expect(row[6]).toBe("");
   });
 });
 
@@ -72,8 +70,8 @@ describe("buildSurveyCsv", () => {
 
   it("escapes commas and quotes in fields", () => {
     const detail = makeDetail();
-    detail.answers.q4_likes_most = {
-      ...detail.answers.q4_likes_most,
+    detail.answers.improvement_feedback = {
+      ...detail.answers.improvement_feedback,
       answer_text: 'Good, but "pricey"',
     };
     const csv = buildSurveyCsv([detail]);

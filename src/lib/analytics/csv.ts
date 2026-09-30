@@ -3,20 +3,11 @@ import type { SubmissionDetail } from "@/types/survey";
 export const CSV_COLUMNS = [
   "Submission ID",
   "Date",
-  "Area",
   "Purchase channel",
-  "Store",
-  "Store area",
-  "Online platform",
-  "Purchase reasons",
-  "Likes",
-  "Problems",
-  "Improvement",
-  "Interested services",
-  "Gifting experience",
-  "Customisation",
-  "Switching reasons",
-  "Final suggestion",
+  "What matters most",
+  "Monthly budget",
+  "Purchase frequency",
+  "Feedback",
 ] as const;
 
 function joinMulti(value: string[] | null | undefined): string {
@@ -37,20 +28,11 @@ export function submissionToCsvRow(detail: SubmissionDetail): string[] {
   return [
     submission.id,
     submission.created_at,
-    submission.area ?? "",
     submission.purchase_channel ?? "",
-    submission.store_name ?? "",
-    submission.store_area ?? "",
-    submission.online_platform ?? "",
-    joinMulti(jsonOf(detail, "q3_purchase_reasons")),
-    textOf(detail, "q4_likes_most"),
-    joinMulti(jsonOf(detail, "q5_dislikes")),
-    textOf(detail, "q6_change_one_thing"),
-    joinMulti(jsonOf(detail, "q8_interested_services")),
-    joinMulti(jsonOf(detail, "q9_gift_purchase_history")),
-    joinMulti(jsonOf(detail, "q10_customisation_preferences")),
-    joinMulti(jsonOf(detail, "q11_switch_reasons")),
-    textOf(detail, "q12_owner_suggestion"),
+    joinMulti(jsonOf(detail, "top_priorities")),
+    textOf(detail, "monthly_budget"),
+    textOf(detail, "purchase_frequency"),
+    textOf(detail, "improvement_feedback"),
   ];
 }
 

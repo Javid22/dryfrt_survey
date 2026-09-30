@@ -17,26 +17,17 @@ export type VoiceEntry = {
   date: string;
 };
 
-const QUESTION_OPTIONS = [
-  { value: "all", label: "All questions" },
-  { value: "q4_likes_most", label: "What they like most" },
-  { value: "q6_change_one_thing", label: "One thing they'd change" },
-  { value: "q12_owner_suggestion", label: "If they owned the store" },
-];
-
 export function CustomerVoice({ entries }: { entries: VoiceEntry[] }) {
   const [area, setArea] = useState("All Areas");
-  const [question, setQuestion] = useState("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     return entries.filter((e) => {
       if (area !== "All Areas" && e.area !== area) return false;
-      if (question !== "all" && e.questionId !== question) return false;
       if (search && !e.text.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [entries, area, question, search]);
+  }, [entries, area, search]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,18 +40,6 @@ export function CustomerVoice({ entries }: { entries: VoiceEntry[] }) {
             {AREA_OPTIONS.map((a) => (
               <SelectItem key={a} value={a}>
                 {a}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={question} onValueChange={setQuestion}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {QUESTION_OPTIONS.map((q) => (
-              <SelectItem key={q.value} value={q.value}>
-                {q.label}
               </SelectItem>
             ))}
           </SelectContent>
